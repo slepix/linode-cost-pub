@@ -199,6 +199,8 @@ runcmd:
     sed -i "s|^SERVICE_ROLE_KEY=.*|SERVICE_ROLE_KEY=${service_role_key}|" /opt/supabase/.env
     sed -i "s|^DASHBOARD_USERNAME=.*|DASHBOARD_USERNAME=supabase|" /opt/supabase/.env
     sed -i "s|^DASHBOARD_PASSWORD=.*|DASHBOARD_PASSWORD=${dashboard_password}|" /opt/supabase/.env
+    sed -i "s|^GOTRUE_MAILER_AUTOCONFIRM=.*|GOTRUE_MAILER_AUTOCONFIRM=true|" /opt/supabase/.env
+    grep -q "^GOTRUE_MAILER_AUTOCONFIRM=" /opt/supabase/.env || echo "GOTRUE_MAILER_AUTOCONFIRM=true" >> /opt/supabase/.env
 
   # Step 5: Generate and patch in the required random security keys
   - |
