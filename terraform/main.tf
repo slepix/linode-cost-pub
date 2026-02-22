@@ -72,7 +72,7 @@ data "external" "anon_jwt" {
   program = [
     "python3", "-c",
     <<-PYTHON
-import sys, json, hmac, hashlib, base64
+import sys, json, hmac, hashlib, base64, time
 
 params = json.load(sys.stdin)
 secret = params["secret"]
@@ -83,8 +83,14 @@ def b64url(data):
         data = data.encode()
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
 
+# iat = now rounded to start of day; exp = iat + 5 years (matching Supabase key generator)
+now = int(time.time())
+iat = now - (now % 86400)
+exp = iat + (5 * 365 * 24 * 3600)
+
 header        = b64url('{"alg":"HS256","typ":"JWT"}')
-payload       = b64url('{"role":"' + role + '","iss":"supabase"}')
+payload_obj   = {"role": role, "iss": "supabase", "iat": iat, "exp": exp}
+payload       = b64url(json.dumps(payload_obj, separators=(",", ":")))
 signing_input = f"{header}.{payload}".encode()
 sig           = hmac.new(secret.encode(), signing_input, hashlib.sha256).digest()
 token         = f"{header}.{payload}.{b64url(sig)}"
@@ -102,7 +108,7 @@ data "external" "service_role_jwt" {
   program = [
     "python3", "-c",
     <<-PYTHON
-import sys, json, hmac, hashlib, base64
+import sys, json, hmac, hashlib, base64, time
 
 params = json.load(sys.stdin)
 secret = params["secret"]
@@ -113,8 +119,13 @@ def b64url(data):
         data = data.encode()
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode()
 
+now = int(time.time())
+iat = now - (now % 86400)
+exp = iat + (5 * 365 * 24 * 3600)
+
 header        = b64url('{"alg":"HS256","typ":"JWT"}')
-payload       = b64url('{"role":"' + role + '","iss":"supabase"}')
+payload_obj   = {"role": role, "iss": "supabase", "iat": iat, "exp": exp}
+payload       = b64url(json.dumps(payload_obj, separators=(",", ":")))
 signing_input = f"{header}.{payload}".encode()
 sig           = hmac.new(secret.encode(), signing_input, hashlib.sha256).digest()
 token         = f"{header}.{payload}.{b64url(sig)}"
