@@ -1,0 +1,61 @@
+/*
+  # Fix get_accessible_accounts: ambiguous column reference
+
+  The previous version used a local variable named `id` implicitly via SELECT INTO,
+  which conflicted with the table column `id` in org_users. Renamed local variables
+  to avoid the ambiguity.
+*/
+
+CREATE OR REPLACE FUNCTION get_accessible_accounts(p_caller_id uuid)
+RETURNS TABLE (
+  id uuid,
+  name text,
+  created_at timestamptz,
+  updated_at timestamptz,
+  last_sync_at timestamptz,
+  can_view_costs boolean,
+  can_view_compliance boolean
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_role text;
+  v_is_active boolean;
+BEGIN
+  SELECT ou.role, ou.is_active INTO v_role, v_is_active
+  FROM org_users ou WHERE ou.id = p_caller_id;
+
+  IF v_role IS NULL OR NOT v_is_active THEN
+    RETURN;
+  END IF;
+
+  IF v_role = 'admin' THEN
+    RETURN QUERY
+      SELECT
+        la.id,
+        la.name,
+        la.created_at,
+        la.updated_at,
+        la.last_sync_at,
+        true::boolean AS can_view_costs,
+        true::boolean AS can_view_compliance
+      FROM linode_accounts la
+      ORDER BY la.name;
+  ELSE
+    RETURN QUERY
+      SELECT
+        la.id,
+        la.name,
+        la.created_at,
+        la.updated_at,
+        la.last_sync_at,
+        uaa.can_view_costs,
+        uaa.can_view_compliance
+      FROM linode_accounts la
+      JOIN user_account_access uaa ON uaa.account_id = la.id AND uaa.user_id = p_caller_id
+      ORDER BY la.name;
+  END IF;
+END;
+$$;

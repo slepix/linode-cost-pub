@@ -1,0 +1,32 @@
+linode_token = "your-linode-api-token"
+
+region         = "us-east"
+instance_type  = "g6-standard-2"   # min 4 GB RAM recommended for Supabase Docker
+instance_label = "linode-cost-manager"
+
+root_password = "change-me-strong-password"
+
+ssh_authorized_keys = [
+  "ssh-ed25519 AAAA... user@host",
+]
+
+# Public GitHub repo to clone and build on the VM (no registry needed)
+git_repo   = "https://github.com/youruser/linode-cost-manager"
+git_branch = "main"
+
+# Optional: set to your domain or public IP so the browser hits the right API URL.
+# If left empty the VM auto-detects its public IP at boot.
+# Examples: "https://yourdomain.com"  or  "http://1.2.3.4"
+public_url = ""
+
+# Optional: leave empty to skip DNS record creation
+domain     = ""
+domain_ttl = 300
+
+# Supabase secrets — leave all empty to auto-generate (recommended).
+# jwt_secret must be at least 32 characters if provided manually.
+jwt_secret         = ""
+postgres_password  = ""
+dashboard_password = ""
+
+tags = ["linode-cost-manager"]
