@@ -169,7 +169,6 @@ resource "linode_instance" "app" {
   authorized_keys = var.ssh_authorized_keys
   root_pass       = var.root_password
   tags            = var.tags
-  interface_generation = "legacy_config"
 
   interface {
     purpose   = "vpc"
