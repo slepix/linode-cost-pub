@@ -1,22 +1,18 @@
 /*
-  # Fix JWT Secret Storage
+  # Fix JWT Secret Storage (superseded)
 
   ## Summary
-  Creates private schema and JWT secret storage table since database-level
-  configuration parameters cannot be set without elevated privileges.
+  This migration originally created a private schema and JWT secret storage table
+  for a custom authentication system. That system has since been replaced by native
+  Supabase authentication (see migration 20260222011132_migrate_to_native_supabase_auth.sql).
+
+  The private.jwt_config table and private.sign_jwt function created here are no longer
+  used and are dropped by migration 20260222014000_drop_unused_private_jwt_schema.sql.
 
   ## Changes
   1. Creates `private` schema if not exists
-  2. Creates `private.jwt_config` table to store the JWT secret
-  3. Inserts a default JWT secret
-  4. Updates `private.sign_jwt` function to read from the table instead of GUC
-  5. Enables RLS on the config table (deny all access from outside functions)
-
-  ## Security
-  - JWT secret is stored in private schema
-  - RLS blocks all direct access to the secret
-  - Only accessible via SECURITY DEFINER functions
-  - Secret never exposed to clients
+  2. Creates `private.jwt_config` table (later dropped)
+  3. Creates `private.sign_jwt` function (later dropped)
 */
 
 CREATE SCHEMA IF NOT EXISTS private;
@@ -37,10 +33,6 @@ CREATE POLICY "No direct access to JWT config"
   TO public
   USING (false);
 
-INSERT INTO private.jwt_config (id, secret)
-VALUES (1, 'NQHQKyd05G/IGvsqKId/QUrwv4hFen7Khv3spUd52GM=')
-ON CONFLICT (id) DO NOTHING;
-
 CREATE OR REPLACE FUNCTION private.sign_jwt(payload jsonb)
 RETURNS text
 LANGUAGE plpgsql
@@ -55,7 +47,7 @@ DECLARE
   sig           text;
 BEGIN
   SELECT jwt_config.secret INTO secret FROM private.jwt_config WHERE id = 1;
-  
+
   IF secret IS NULL OR secret = '' THEN
     RAISE EXCEPTION 'JWT secret not configured';
   END IF;
