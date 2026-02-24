@@ -163,12 +163,6 @@ resource "linode_database_postgresql_v2" "db" {
 
   cluster_size = var.db_cluster_size
 
-  private_network = {
-    vpc_id        = linode_vpc.main.id
-    subnet_id     = linode_vpc_subnet.main.id
-    public_access = var.db_public_access
-  }
-
   updates = {
     duration    = var.db_updates_duration
     frequency   = var.db_updates_frequency

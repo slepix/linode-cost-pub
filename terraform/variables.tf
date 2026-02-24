@@ -103,6 +103,20 @@ variable "refresh_api_secret" {
   default     = ""
 }
 
+variable "postgres_password" {
+  description = "Unused — kept for backwards compatibility with existing tfvars files."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "dashboard_password" {
+  description = "Unused — kept for backwards compatibility with existing tfvars files."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 # ---------------------------------------------------------------------------
 # Managed PostgreSQL Database
 # ---------------------------------------------------------------------------
@@ -123,12 +137,6 @@ variable "db_cluster_size" {
   description = "Number of nodes in the database cluster (1 or 3)"
   type        = number
   default     = 1
-}
-
-variable "db_public_access" {
-  description = "Whether the database should be publicly accessible in addition to the VPC. Set to false to restrict access to VPC only."
-  type        = bool
-  default     = false
 }
 
 variable "db_extra_allow_list" {

@@ -41,9 +41,6 @@ db_type = "g6-nanode-1"
 # 1 = single node (dev/staging), 3 = HA cluster (production)
 db_cluster_size = 1
 
-# Set to true to also expose the database on a public IP (not recommended)
-db_public_access = false
-
 # Additional CIDRs allowed to connect (your workstation IP for psql access, etc.)
 # The app instance VPC IP is always added automatically.
 db_extra_allow_list = []
