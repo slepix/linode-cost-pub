@@ -3,12 +3,14 @@ services:
     image: postgrest/postgrest:v12.2.3
     restart: unless-stopped
     environment:
-      PGRST_DB_URI: ${DB_URI:-postgres://lccm_app:${LCCM_APP_PASSWORD:-changeme}@postgres:5432/lccm}
+      PGRST_DB_URI: postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT:-5432}/${DB_NAME:-defaultdb}?sslmode=verify-full&sslrootcert=/etc/ssl/certs/linode-db-ca.crt
       PGRST_DB_SCHEMA: public
       PGRST_DB_ANON_ROLE: anon
       PGRST_DB_POOL: 10
-      PGRST_JWT_SECRET: ${JWT_SECRET:-change-me-to-a-random-secret-of-at-least-32-characters}
+      PGRST_JWT_SECRET: ${JWT_SECRET}
       PGRST_SERVER_PORT: "3000"
+    volumes:
+      - /etc/ssl/certs/linode-db-ca.crt:/etc/ssl/certs/linode-db-ca.crt:ro
     ports:
       - "3000:3000"
     command: postgrest

@@ -10,6 +10,7 @@ packages:
   - git
   - jq
   - ufw
+  - postgresql-client
 
 write_files:
   - path: /etc/ssl/certs/linode-db-ca.crt
@@ -68,10 +69,22 @@ write_files:
       git clone --depth 1 --branch "$GIT_BRANCH" "$GIT_REPO" "$APP_DIR"
 
       source /opt/app/env-static
-      DB_URI="postgresql://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME?sslmode=verify-full&sslrootcert=/etc/ssl/certs/linode-db-ca.crt"
+
+      PSQL_OPTS="-h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME"
+      export PGPASSWORD="$DB_PASSWORD"
+      export PGSSLMODE=verify-full
+      export PGSSLROOTCERT=/etc/ssl/certs/linode-db-ca.crt
+
+      echo "Setting JWT secret on the database..."
+      psql $PSQL_OPTS -c "ALTER DATABASE \"$DB_NAME\" SET app.settings.jwt_secret = '$JWT_SECRET';"
+
+      echo "Applying schema..."
+      psql $PSQL_OPTS -f "$APP_DIR/setup.sql"
+
+      unset PGPASSWORD
 
       cp /opt/app/env-static "$APP_DIR/.env"
-      printf 'VITE_API_URL=%s/api\nDB_URI=%s\n' "$BASE_URL" "$DB_URI" >> "$APP_DIR/.env"
+      printf 'VITE_API_URL=%s/api\n' "$BASE_URL" >> "$APP_DIR/.env"
       chmod 600 "$APP_DIR/.env"
 
       echo "Building and starting the stack..."
