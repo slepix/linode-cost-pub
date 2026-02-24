@@ -142,10 +142,7 @@ function AppShell() {
                 <Cloud size={22} className="text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-bold text-gray-900 dark:text-gray-50 leading-tight">Linode Cost Manager</h1>
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 leading-tight">
-                  Monitor, analyze, and optimize your cloud costs
-                </p>
+                <h1 className="text-lg font-bold text-gray-900 dark:text-gray-50 leading-tight">Linode Cost and Compliance Monitor</h1>
               </div>
             </div>
             <div className="flex items-center gap-2">
