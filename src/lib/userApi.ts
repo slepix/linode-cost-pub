@@ -23,28 +23,18 @@ export async function inviteUser(
   fullName: string,
   role: 'power_user' | 'auditor' = 'auditor'
 ): Promise<void> {
-  const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
-    email: email.trim(),
-    password,
-    options: { data: { full_name: fullName.trim() } },
-  });
-
-  if (signUpError) {
-    if (signUpError.message.toLowerCase().includes('already registered')) throw new Error('A user with this email already exists');
-    throw new Error(signUpError.message);
-  }
-
-  if (!signUpData.user) throw new Error('Failed to create user');
-
   try {
-    await rpc('admin_create_profile', {
-      p_user_id: signUpData.user.id,
+    await rpc('admin_create_user', {
+      p_email: email.trim(),
       p_full_name: fullName.trim(),
+      p_password: password,
       p_role: role,
     });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Failed to create profile';
+    const msg = err instanceof Error ? err.message : 'Failed to create user';
     if (msg.includes('forbidden')) throw new Error('Only admins can create users');
+    if (msg.includes('email_taken')) throw new Error('A user with this email already exists');
+    if (msg.includes('password_too_short')) throw new Error('Password must be at least 8 characters');
     throw new Error(msg);
   }
 }
@@ -116,21 +106,13 @@ export async function deleteUser(userId: string): Promise<void> {
 
 export async function changeUserPassword(userId: string, password: string): Promise<void> {
   if (password.length < 8) throw new Error('Password must be at least 8 characters');
-  const serviceUrl = import.meta.env.VITE_SUPABASE_URL;
-  const serviceKey = import.meta.env.VITE_SUPABASE_SERVICE_ROLE_KEY;
-  if (!serviceKey) throw new Error('Password changes require service role access — configure VITE_SUPABASE_SERVICE_ROLE_KEY');
-  const res = await fetch(`${serviceUrl}/auth/v1/admin/users/${userId}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'apikey': serviceKey,
-      'Authorization': `Bearer ${serviceKey}`,
-    },
-    body: JSON.stringify({ password }),
-  });
-  if (!res.ok) {
-    const d = await res.json().catch(() => ({}));
-    throw new Error(d?.message ?? 'Failed to change password');
+  try {
+    await rpc('admin_change_password', { p_user_id: userId, p_password: password });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Failed to change password';
+    if (msg.includes('forbidden')) throw new Error('Only admins can change passwords');
+    if (msg.includes('password_too_short')) throw new Error('Password must be at least 8 characters');
+    throw new Error(msg);
   }
 }
 
