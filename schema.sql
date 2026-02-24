@@ -209,7 +209,7 @@ CREATE POLICY "Allow all access to budget_alerts"
   ON budget_alerts FOR ALL
   TO anon, authenticated
   USING (true)
-  WITH CHECK (true);
+  WITH CHECK (true);fdsa
 
 
 CREATE TABLE IF NOT EXISTS metrics_history (
