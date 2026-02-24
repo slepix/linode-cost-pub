@@ -10,7 +10,10 @@
 -- Prerequisites:
 --   1. Create a database:  CREATE DATABASE lccm;
 --   2. Create an app user: CREATE USER lccm_app WITH PASSWORD 'changeme';
---   3. Set JWT secret:     ALTER DATABASE lccm SET app.settings.jwt_secret = 'your-secret-min-32-chars';
+--   3. Set JWT secret (managed DB compatible - no superuser required):
+--      INSERT INTO private.app_config (key, value) VALUES ('jwt_secret', 'your-secret-min-32-chars')
+--      ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
+--      (This script creates the private schema and app_config table automatically.)
 --
 -- After running this file, configure PostgREST with:
 --   db-uri         = "postgres://lccm_app:changeme@localhost:5432/lccm"
