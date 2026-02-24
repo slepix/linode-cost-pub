@@ -38,18 +38,23 @@ locals {
   jwt_secret         = var.jwt_secret != "" ? var.jwt_secret : random_password.jwt_secret.result
   refresh_api_secret = var.refresh_api_secret != "" ? var.refresh_api_secret : random_password.refresh_api_secret.result
 
+  env_static_b64 = base64encode(join("\n", [
+    "JWT_SECRET=${local.jwt_secret}",
+    "REFRESH_API_SECRET=${local.refresh_api_secret}",
+    "DB_HOST=${linode_database_postgresql_v2.db.host_primary}",
+    "DB_PORT=${linode_database_postgresql_v2.db.port}",
+    "DB_NAME=defaultdb",
+    "DB_USER=${linode_database_postgresql_v2.db.root_username}",
+    "DB_PASSWORD=${linode_database_postgresql_v2.db.root_password}",
+    "",
+  ]))
+
   user_data = templatefile("${path.module}/cloud-init.yaml.tpl", {
-    jwt_secret         = local.jwt_secret
-    refresh_api_secret = local.refresh_api_secret
-    git_repo           = var.git_repo
-    git_branch         = var.git_branch
-    public_url         = var.public_url
-    db_host            = linode_database_postgresql_v2.db.host_primary
-    db_port            = linode_database_postgresql_v2.db.port
-    db_name            = "defaultdb"
-    db_user            = linode_database_postgresql_v2.db.root_username
-    db_password        = linode_database_postgresql_v2.db.root_password
-    db_ca_cert         = linode_database_postgresql_v2.db.ca_cert
+    git_repo       = var.git_repo
+    git_branch     = var.git_branch
+    public_url     = var.public_url
+    db_ca_cert     = linode_database_postgresql_v2.db.ca_cert
+    env_static_b64 = local.env_static_b64
   })
 
   has_domain = var.domain != ""

@@ -18,6 +18,12 @@ write_files:
     encoding: b64
     content: "${db_ca_cert}"
 
+  - path: /opt/app/env-static
+    permissions: '0600'
+    owner: root:root
+    encoding: b64
+    content: "${env_static_b64}"
+
   - path: /opt/app/deploy.sh
     permissions: '0755'
     owner: root:root
@@ -29,7 +35,6 @@ write_files:
       GIT_BRANCH="${git_branch}"
       APP_DIR="/opt/app/repo"
 
-      # Resolve public base URL (used as VITE_API_URL in the frontend build)
       CONFIGURED_URL="${public_url}"
       if [ -n "$CONFIGURED_URL" ]; then
         BASE_URL="$CONFIGURED_URL"
@@ -62,16 +67,11 @@ write_files:
       rm -rf "$APP_DIR"
       git clone --depth 1 --branch "$GIT_BRANCH" "$GIT_REPO" "$APP_DIR"
 
-      # Build the Postgres connection URI using SSL with the managed DB CA cert
-      DB_URI="postgresql://${db_user}:${db_password}@${db_host}:${db_port}/${db_name}?sslmode=verify-full&sslrootcert=/etc/ssl/certs/linode-db-ca.crt"
+      source /opt/app/env-static
+      DB_URI="postgresql://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$DB_NAME?sslmode=verify-full&sslrootcert=/etc/ssl/certs/linode-db-ca.crt"
 
-      # Write the .env file for docker-compose
-      cat > "$APP_DIR/.env" <<EOF
-VITE_API_URL=$BASE_URL/api
-JWT_SECRET=${jwt_secret}
-REFRESH_API_SECRET=${refresh_api_secret}
-DB_URI=$DB_URI
-EOF
+      cp /opt/app/env-static "$APP_DIR/.env"
+      printf 'VITE_API_URL=%s/api\nDB_URI=%s\n' "$BASE_URL" "$DB_URI" >> "$APP_DIR/.env"
       chmod 600 "$APP_DIR/.env"
 
       echo "Building and starting the stack..."
@@ -89,7 +89,6 @@ EOF
           listen [::]:80;
           server_name _;
 
-          # PostgREST API
           location /api/ {
               rewrite ^/api/(.*) /$1 break;
               proxy_pass http://127.0.0.1:3000;
@@ -102,7 +101,6 @@ EOF
               proxy_send_timeout 300;
           }
 
-          # Backend sync/refresh server
           location /sync/ {
               rewrite ^/sync/(.*) /$1 break;
               proxy_pass http://127.0.0.1:3001;
@@ -112,7 +110,6 @@ EOF
               proxy_set_header X-Forwarded-Proto $scheme;
           }
 
-          # Frontend
           location / {
               proxy_pass http://127.0.0.1:8080;
               proxy_set_header Host $host;
@@ -123,7 +120,6 @@ EOF
       }
 
 runcmd:
-  # ---- Install Docker ----
   - install -m 0755 -d /etc/apt/keyrings
   - curl -fsSL https://download.docker.com/linux/ubuntu/gpg -o /etc/apt/keyrings/docker.asc
   - chmod a+r /etc/apt/keyrings/docker.asc
@@ -135,21 +131,14 @@ runcmd:
   - apt-get update -y
   - apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin nginx
   - systemctl enable --now docker
-
-  # ---- Deploy app stack ----
   - bash /opt/app/deploy.sh
-
-  # ---- Configure nginx as reverse proxy ----
   - rm -f /etc/nginx/sites-enabled/default
   - ln -sf /etc/nginx/sites-available/app /etc/nginx/sites-enabled/app
   - nginx -t && systemctl reload nginx
-
-  # ---- Harden with UFW ----
   - ufw default deny incoming
   - ufw default allow outgoing
   - ufw allow 22/tcp comment 'SSH'
   - ufw allow 80/tcp comment 'HTTP'
   - ufw allow 443/tcp comment 'HTTPS'
   - ufw --force enable
-
   - echo "Bootstrap complete."
