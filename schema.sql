@@ -67,6 +67,11 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public
 -- ---------------------------------------------------------------------------
 CREATE SCHEMA IF NOT EXISTS private;
 
+CREATE TABLE IF NOT EXISTS private.app_config (
+  key   text PRIMARY KEY,
+  value text NOT NULL
+);
+
 CREATE OR REPLACE FUNCTION private.sign_jwt(payload jsonb)
 RETURNS text
 LANGUAGE plpgsql
@@ -80,9 +85,9 @@ DECLARE
   signing_input text;
   sig           text;
 BEGIN
-  secret := current_setting('app.settings.jwt_secret', true);
+  SELECT value INTO secret FROM private.app_config WHERE key = 'jwt_secret';
   IF secret IS NULL OR secret = '' THEN
-    RAISE EXCEPTION 'JWT secret not configured. Run: ALTER DATABASE yourdb SET app.settings.jwt_secret = ''your-secret'';';
+    RAISE EXCEPTION 'JWT secret not configured. Insert a row into private.app_config with key=jwt_secret.';
   END IF;
 
   header_b64 := replace(replace(

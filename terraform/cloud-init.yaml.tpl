@@ -76,7 +76,7 @@ write_files:
       export PGSSLROOTCERT=/etc/ssl/certs/linode-db-ca.crt
 
       echo "Setting JWT secret on the database..."
-      psql $PSQL_OPTS -c "ALTER DATABASE \"$DB_NAME\" SET app.settings.jwt_secret = '$JWT_SECRET';"
+      psql $PSQL_OPTS -c "CREATE SCHEMA IF NOT EXISTS private; CREATE TABLE IF NOT EXISTS private.app_config (key text PRIMARY KEY, value text NOT NULL); INSERT INTO private.app_config (key, value) VALUES ('jwt_secret', '$JWT_SECRET') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;"
 
       echo "Applying schema..."
       psql $PSQL_OPTS -f "$APP_DIR/schema.sql"
