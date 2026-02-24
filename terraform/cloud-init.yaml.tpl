@@ -79,7 +79,7 @@ write_files:
       psql $PSQL_OPTS -c "ALTER DATABASE \"$DB_NAME\" SET app.settings.jwt_secret = '$JWT_SECRET';"
 
       echo "Applying schema..."
-      psql $PSQL_OPTS -f "$APP_DIR/setup.sql"
+      psql $PSQL_OPTS -f "$APP_DIR/schema.sql"
 
       unset PGPASSWORD
 
