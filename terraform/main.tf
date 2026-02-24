@@ -53,7 +53,7 @@ locals {
     git_repo       = var.git_repo
     git_branch     = var.git_branch
     public_url     = var.public_url
-    db_ca_cert     = linode_database_postgresql_v2.db.ca_cert
+    db_ca_cert     = base64encode(linode_database_postgresql_v2.db.ca_cert)
     env_static_b64 = local.env_static_b64
   })
 
