@@ -12,6 +12,12 @@ packages:
   - ufw
 
 write_files:
+  - path: /etc/ssl/certs/linode-db-ca.crt
+    permissions: '0644'
+    owner: root:root
+    encoding: b64
+    content: "${db_ca_cert}"
+
   - path: /opt/app/deploy.sh
     permissions: '0755'
     owner: root:root
@@ -55,9 +61,6 @@ write_files:
       echo "Cloning $GIT_REPO ($GIT_BRANCH)..."
       rm -rf "$APP_DIR"
       git clone --depth 1 --branch "$GIT_BRANCH" "$GIT_REPO" "$APP_DIR"
-
-      # Write SSL CA cert for the managed database
-      echo "${db_ca_cert}" | base64 -d > /etc/ssl/certs/linode-db-ca.crt
 
       # Build the Postgres connection URI using SSL with the managed DB CA cert
       DB_URI="postgresql://${db_user}:${db_password}@${db_host}:${db_port}/${db_name}?sslmode=verify-full&sslrootcert=/etc/ssl/certs/linode-db-ca.crt"
