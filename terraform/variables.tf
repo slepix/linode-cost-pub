@@ -86,25 +86,11 @@ variable "instance_vpc_ip" {
 }
 
 # ---------------------------------------------------------------------------
-# Database / JWT secrets
+# JWT / API secrets
 # ---------------------------------------------------------------------------
 
 variable "jwt_secret" {
-  description = "HS256 JWT secret shared by PostgREST and the database (min 32 chars). Leave blank to auto-generate."
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "postgres_password" {
-  description = "Password for the PostgreSQL superuser (postgres). Leave blank to auto-generate."
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
-variable "lccm_app_password" {
-  description = "Password for the lccm_app database user used by PostgREST and the backend server. Leave blank to auto-generate."
+  description = "HS256 JWT secret (min 32 chars). Leave blank to auto-generate."
   type        = string
   sensitive   = true
   default     = ""
@@ -115,4 +101,62 @@ variable "refresh_api_secret" {
   type        = string
   sensitive   = true
   default     = ""
+}
+
+# ---------------------------------------------------------------------------
+# Managed PostgreSQL Database
+# ---------------------------------------------------------------------------
+
+variable "db_engine_id" {
+  description = "Managed Database engine in engine/version format (e.g. postgresql/16)"
+  type        = string
+  default     = "postgresql/16"
+}
+
+variable "db_type" {
+  description = "Linode instance type for the database nodes (e.g. g6-nanode-1, g6-standard-1)"
+  type        = string
+  default     = "g6-nanode-1"
+}
+
+variable "db_cluster_size" {
+  description = "Number of nodes in the database cluster (1 or 3)"
+  type        = number
+  default     = 1
+}
+
+variable "db_public_access" {
+  description = "Whether the database should be publicly accessible in addition to the VPC. Set to false to restrict access to VPC only."
+  type        = bool
+  default     = false
+}
+
+variable "db_extra_allow_list" {
+  description = "Additional IP addresses or CIDRs allowed to connect to the database (the app instance VPC IP is always added automatically)"
+  type        = list(string)
+  default     = []
+}
+
+variable "db_updates_duration" {
+  description = "Length of the maintenance window in hours"
+  type        = number
+  default     = 4
+}
+
+variable "db_updates_frequency" {
+  description = "Frequency of maintenance window (weekly or monthly)"
+  type        = string
+  default     = "weekly"
+}
+
+variable "db_updates_hour_of_day" {
+  description = "Hour of the day for the maintenance window (0-23 UTC)"
+  type        = number
+  default     = 2
+}
+
+variable "db_updates_day_of_week" {
+  description = "Day of the week for the maintenance window (1=Monday … 7=Sunday)"
+  type        = number
+  default     = 7
 }

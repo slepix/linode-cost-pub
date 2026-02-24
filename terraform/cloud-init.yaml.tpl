@@ -56,14 +56,19 @@ write_files:
       rm -rf "$APP_DIR"
       git clone --depth 1 --branch "$GIT_BRANCH" "$GIT_REPO" "$APP_DIR"
 
+      # Write SSL CA cert for the managed database
+      echo "${db_ca_cert}" | base64 -d > /etc/ssl/certs/linode-db-ca.crt
+
+      # Build the Postgres connection URI using SSL with the managed DB CA cert
+      DB_URI="postgresql://${db_user}:${db_password}@${db_host}:${db_port}/${db_name}?sslmode=verify-full&sslrootcert=/etc/ssl/certs/linode-db-ca.crt"
+
       # Write the .env file for docker-compose
       cat > "$APP_DIR/.env" <<EOF
-      VITE_API_URL=$BASE_URL/api
-      POSTGRES_PASSWORD=${postgres_password}
-      LCCM_APP_PASSWORD=${lccm_app_password}
-      JWT_SECRET=${jwt_secret}
-      REFRESH_API_SECRET=${refresh_api_secret}
-      EOF
+VITE_API_URL=$BASE_URL/api
+JWT_SECRET=${jwt_secret}
+REFRESH_API_SECRET=${refresh_api_secret}
+DB_URI=$DB_URI
+EOF
       chmod 600 "$APP_DIR/.env"
 
       echo "Building and starting the stack..."

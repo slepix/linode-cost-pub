@@ -34,20 +34,8 @@ output "app_url" {
 }
 
 output "jwt_secret" {
-  description = "JWT secret shared by PostgREST and the database"
+  description = "JWT secret used by PostgREST"
   value       = local.jwt_secret
-  sensitive   = true
-}
-
-output "postgres_password" {
-  description = "PostgreSQL superuser password"
-  value       = local.postgres_password
-  sensitive   = true
-}
-
-output "lccm_app_password" {
-  description = "Password for the lccm_app database user (used by PostgREST and backend server)"
-  value       = local.lccm_app_password
   sensitive   = true
 }
 
@@ -55,6 +43,54 @@ output "refresh_api_secret" {
   description = "Secret for the backend refresh/sync API"
   value       = local.refresh_api_secret
   sensitive   = true
+}
+
+output "db_id" {
+  description = "Managed Database ID"
+  value       = linode_database_postgresql_v2.db.id
+}
+
+output "db_host_primary" {
+  description = "Primary host for the Managed Database"
+  value       = linode_database_postgresql_v2.db.host_primary
+}
+
+output "db_host_secondary" {
+  description = "Secondary/private host for the Managed Database"
+  value       = linode_database_postgresql_v2.db.host_secondary
+}
+
+output "db_port" {
+  description = "Port for the Managed Database"
+  value       = linode_database_postgresql_v2.db.port
+}
+
+output "db_name" {
+  description = "Default database name"
+  value       = "defaultdb"
+}
+
+output "db_root_username" {
+  description = "Root username for the Managed Database"
+  value       = linode_database_postgresql_v2.db.root_username
+  sensitive   = true
+}
+
+output "db_root_password" {
+  description = "Root password for the Managed Database"
+  value       = linode_database_postgresql_v2.db.root_password
+  sensitive   = true
+}
+
+output "db_ca_cert" {
+  description = "Base64-encoded SSL CA certificate for the Managed Database"
+  value       = linode_database_postgresql_v2.db.ca_cert
+  sensitive   = true
+}
+
+output "db_version" {
+  description = "PostgreSQL engine version"
+  value       = linode_database_postgresql_v2.db.version
 }
 
 output "domain_nameservers" {

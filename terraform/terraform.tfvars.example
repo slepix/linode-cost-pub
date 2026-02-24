@@ -23,11 +23,35 @@ public_url = ""
 domain     = ""
 domain_ttl = 300
 
-# Database secrets — leave all empty to auto-generate (recommended).
+# JWT / API secrets — leave empty to auto-generate (recommended).
 # jwt_secret must be at least 32 characters if provided manually.
 jwt_secret         = ""
-postgres_password  = ""
-lccm_app_password  = ""
 refresh_api_secret = ""
+
+# ---------------------------------------------------------------------------
+# Managed PostgreSQL Database
+# ---------------------------------------------------------------------------
+
+# PostgreSQL engine version
+db_engine_id = "postgresql/16"
+
+# Linode plan for database nodes (g6-nanode-1 = 1 GB RAM, g6-standard-1 = 2 GB)
+db_type = "g6-nanode-1"
+
+# 1 = single node (dev/staging), 3 = HA cluster (production)
+db_cluster_size = 1
+
+# Set to true to also expose the database on a public IP (not recommended)
+db_public_access = false
+
+# Additional CIDRs allowed to connect (your workstation IP for psql access, etc.)
+# The app instance VPC IP is always added automatically.
+db_extra_allow_list = []
+
+# Maintenance window — Sunday at 02:00 UTC for 4 hours
+db_updates_frequency   = "weekly"
+db_updates_day_of_week = 7
+db_updates_hour_of_day = 2
+db_updates_duration    = 4
 
 tags = ["linode-cost-manager"]

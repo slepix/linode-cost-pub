@@ -1,32 +1,9 @@
 services:
-  postgres:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: lccm
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      LCCM_APP_PASSWORD: ${LCCM_APP_PASSWORD:-changeme}
-      JWT_SECRET: ${JWT_SECRET:-change-me-to-a-random-secret-of-at-least-32-characters}
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./db-init:/docker-entrypoint-initdb.d
-    ports:
-      - "5432:5432"
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
   postgrest:
     image: postgrest/postgrest:v12.2.3
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
-      PGRST_DB_URI: postgres://lccm_app:${LCCM_APP_PASSWORD:-changeme}@postgres:5432/lccm
+      PGRST_DB_URI: ${DB_URI:-postgres://lccm_app:${LCCM_APP_PASSWORD:-changeme}@postgres:5432/lccm}
       PGRST_DB_SCHEMA: public
       PGRST_DB_ANON_ROLE: anon
       PGRST_DB_POOL: 10
@@ -41,11 +18,8 @@ services:
       context: ./server
       dockerfile: ../Dockerfile
     restart: unless-stopped
-    depends_on:
-      postgres:
-        condition: service_healthy
     environment:
-      DATABASE_URL: postgres://lccm_app:${LCCM_APP_PASSWORD:-changeme}@postgres:5432/lccm
+      DATABASE_URL: ${DB_URI:-postgres://lccm_app:${LCCM_APP_PASSWORD:-changeme}@postgres:5432/lccm}
       REFRESH_API_SECRET: ${REFRESH_API_SECRET:-change-me}
       PORT: "3001"
     ports:
@@ -61,6 +35,3 @@ services:
       - server
     ports:
       - "8080:80"
-
-volumes:
-  postgres_data:

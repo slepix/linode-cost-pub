@@ -26,16 +26,6 @@ resource "random_password" "jwt_secret" {
   special = false
 }
 
-resource "random_password" "postgres_password" {
-  length  = 32
-  special = false
-}
-
-resource "random_password" "lccm_app_password" {
-  length  = 32
-  special = false
-}
-
 resource "random_password" "refresh_api_secret" {
   length  = 48
   special = false
@@ -46,19 +36,21 @@ resource "random_password" "refresh_api_secret" {
 # ---------------------------------------------------------------------------
 
 locals {
-  jwt_secret          = var.jwt_secret != "" ? var.jwt_secret : random_password.jwt_secret.result
-  postgres_password   = var.postgres_password != "" ? var.postgres_password : random_password.postgres_password.result
-  lccm_app_password   = var.lccm_app_password != "" ? var.lccm_app_password : random_password.lccm_app_password.result
-  refresh_api_secret  = var.refresh_api_secret != "" ? var.refresh_api_secret : random_password.refresh_api_secret.result
+  jwt_secret         = var.jwt_secret != "" ? var.jwt_secret : random_password.jwt_secret.result
+  refresh_api_secret = var.refresh_api_secret != "" ? var.refresh_api_secret : random_password.refresh_api_secret.result
 
   user_data = templatefile("${path.module}/cloud-init.yaml.tpl", {
     jwt_secret         = local.jwt_secret
-    postgres_password  = local.postgres_password
-    lccm_app_password  = local.lccm_app_password
     refresh_api_secret = local.refresh_api_secret
     git_repo           = var.git_repo
     git_branch         = var.git_branch
     public_url         = var.public_url
+    db_host            = linode_database_postgresql_v2.db.host_primary
+    db_port            = linode_database_postgresql_v2.db.port
+    db_name            = "defaultdb"
+    db_user            = linode_database_postgresql_v2.db.root_username
+    db_password        = linode_database_postgresql_v2.db.root_password
+    db_ca_cert         = linode_database_postgresql_v2.db.ca_cert
   })
 
   has_domain = var.domain != ""
@@ -151,6 +143,38 @@ resource "linode_firewall" "app" {
   }
 
   linodes = [linode_instance.app.id]
+}
+
+# ---------------------------------------------------------------------------
+# Managed PostgreSQL Database
+# ---------------------------------------------------------------------------
+
+resource "linode_database_postgresql_v2" "db" {
+  label     = "${var.instance_label}-db"
+  engine_id = var.db_engine_id
+  region    = var.region
+  type      = var.db_type
+
+  # Allow connections from the app instance's VPC IP and any extra CIDRs
+  allow_list = concat(
+    ["${var.instance_vpc_ip}/32"],
+    var.db_extra_allow_list
+  )
+
+  cluster_size = var.db_cluster_size
+
+  private_network = {
+    vpc_id        = linode_vpc.main.id
+    subnet_id     = linode_vpc_subnet.main.id
+    public_access = var.db_public_access
+  }
+
+  updates = {
+    duration    = var.db_updates_duration
+    frequency   = var.db_updates_frequency
+    hour_of_day = var.db_updates_hour_of_day
+    day_of_week = var.db_updates_day_of_week
+  }
 }
 
 # ---------------------------------------------------------------------------
