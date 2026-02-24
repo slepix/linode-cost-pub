@@ -11,7 +11,7 @@ variable "region" {
 }
 
 variable "instance_type" {
-  description = "Linode instance plan for the app VM (e.g. g6-standard-2, g6-standard-4). Supabase Docker requires at least 2 GB RAM; g6-standard-2 (4 GB) recommended."
+  description = "Linode instance plan (e.g. g6-standard-2, g6-standard-4). 4 GB RAM minimum recommended."
   type        = string
   default     = "g6-standard-2"
 }
@@ -35,7 +35,7 @@ variable "root_password" {
 }
 
 variable "public_url" {
-  description = "Public base URL the browser uses to reach the app (e.g. http://1.2.3.4 or https://yourdomain.com). Used as VITE_SUPABASE_URL during docker build. Leave empty to auto-detect the VM's public IP at boot."
+  description = "Public base URL the browser uses to reach the app (e.g. http://1.2.3.4 or https://yourdomain.com). Used as VITE_API_URL during docker build. Leave empty to auto-detect the VM's public IP at boot."
   type        = string
   default     = ""
 }
@@ -86,25 +86,32 @@ variable "instance_vpc_ip" {
 }
 
 # ---------------------------------------------------------------------------
-# Supabase / JWT
+# Database / JWT secrets
 # ---------------------------------------------------------------------------
 
 variable "jwt_secret" {
-  description = "HS256 JWT secret used by Supabase (min 32 chars). Leave blank to auto-generate."
+  description = "HS256 JWT secret shared by PostgREST and the database (min 32 chars). Leave blank to auto-generate."
   type        = string
   sensitive   = true
   default     = ""
 }
 
 variable "postgres_password" {
-  description = "Password for the Supabase internal PostgreSQL superuser. Leave blank to auto-generate."
+  description = "Password for the PostgreSQL superuser (postgres). Leave blank to auto-generate."
   type        = string
   sensitive   = true
   default     = ""
 }
 
-variable "dashboard_password" {
-  description = "Password for the Supabase Studio dashboard. Leave blank to auto-generate."
+variable "lccm_app_password" {
+  description = "Password for the lccm_app database user used by PostgREST and the backend server. Leave blank to auto-generate."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+variable "refresh_api_secret" {
+  description = "Secret token for the backend refresh/sync API endpoints. Leave blank to auto-generate."
   type        = string
   sensitive   = true
   default     = ""

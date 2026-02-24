@@ -33,44 +33,28 @@ output "app_url" {
   value       = local.has_domain ? "http://${var.domain}" : "http://${one(linode_instance.app.ipv4)}"
 }
 
-output "supabase_url" {
-  description = "Supabase API URL (Kong gateway) — set as VITE_SUPABASE_URL in the frontend"
-  value       = local.has_domain ? "http://${var.domain}" : "http://${one(linode_instance.app.ipv4)}"
-}
-
-output "supabase_anon_key" {
-  description = "Supabase anon JWT key — set as VITE_SUPABASE_ANON_KEY in the frontend"
-  value       = local.anon_key
-  sensitive   = true
-}
-
-output "supabase_service_role_key" {
-  description = "Supabase service_role JWT key — for server-side / admin use only, never expose to browsers"
-  value       = local.service_role_key
-  sensitive   = true
-}
-
-output "supabase_jwt_secret" {
-  description = "JWT secret shared by all Supabase services"
+output "jwt_secret" {
+  description = "JWT secret shared by PostgREST and the database"
   value       = local.jwt_secret
   sensitive   = true
 }
 
-output "supabase_postgres_password" {
-  description = "PostgreSQL superuser password (for DBA use only)"
+output "postgres_password" {
+  description = "PostgreSQL superuser password"
   value       = local.postgres_password
   sensitive   = true
 }
 
-output "supabase_dashboard_password" {
-  description = "Password for Supabase Studio dashboard (username: supabase)"
-  value       = local.dashboard_password
+output "lccm_app_password" {
+  description = "Password for the lccm_app database user (used by PostgREST and backend server)"
+  value       = local.lccm_app_password
   sensitive   = true
 }
 
-output "supabase_studio_url" {
-  description = "URL for Supabase Studio dashboard"
-  value       = local.has_domain ? "http://${var.domain}/studio/" : "http://${one(linode_instance.app.ipv4)}/studio/"
+output "refresh_api_secret" {
+  description = "Secret for the backend refresh/sync API"
+  value       = local.refresh_api_secret
+  sensitive   = true
 }
 
 output "domain_nameservers" {
