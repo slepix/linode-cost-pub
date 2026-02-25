@@ -1,4 +1,14 @@
-const apiUrl = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+declare global {
+  interface Window {
+    __CONFIG__?: { apiUrl?: string };
+  }
+}
+
+function getApiUrl(): string {
+  return window.__CONFIG__?.apiUrl ?? (import.meta.env.VITE_API_URL as string | undefined) ?? '';
+}
+
+const apiUrl = getApiUrl();
 
 function getToken(): string | null {
   try {

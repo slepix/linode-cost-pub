@@ -1,6 +1,14 @@
 #!/bin/sh
 set -e
 
+API_URL="${API_URL:-/api}"
+
+cat > /usr/share/nginx/html/config.js <<EOF
+window.__CONFIG__ = {
+  apiUrl: "${API_URL}"
+};
+EOF
+
 node /api/dist/index.js &
 API_PID=$!
 

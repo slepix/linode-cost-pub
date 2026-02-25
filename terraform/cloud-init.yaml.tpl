@@ -92,6 +92,7 @@ write_files:
       cp /opt/app/env-static "$APP_DIR/.env"
       sed -i "s/^DB_NAME=.*/DB_NAME=$LCCM_DB/" "$APP_DIR/.env"
       printf 'VITE_API_URL=%s/api\n' "$BASE_URL" >> "$APP_DIR/.env"
+      printf 'API_URL=%s/api\n' "$BASE_URL" >> "$APP_DIR/.env"
       chmod 600 "$APP_DIR/.env"
 
       echo "Building and starting the stack..."
