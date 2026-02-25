@@ -610,6 +610,20 @@ export async function fetchLinodeResources(accountId: string, onProgress?: (msg:
       existingByResourceId[`${r.resource_type}:${r.resource_id}`] = r;
     }
 
+    // Normalize all resource objects to have identical keys (PostgREST requires this)
+    const normalized = resources.map(r => ({
+      account_id: r.account_id,
+      resource_id: r.resource_id,
+      resource_type: r.resource_type,
+      label: r.label ?? null,
+      region: r.region ?? null,
+      plan_type: r.plan_type ?? null,
+      monthly_cost: r.monthly_cost ?? 0,
+      status: r.status ?? null,
+      resource_created_at: r.resource_created_at ?? null,
+      specs: r.specs ?? null,
+    }));
+
     // Delete existing resources for this account
     const { error: deleteError } = await supabase.from('resources').delete().eq('account_id', accountId);
     if (deleteError) {
@@ -617,11 +631,11 @@ export async function fetchLinodeResources(accountId: string, onProgress?: (msg:
     }
 
     // Insert new resources in batches to avoid payload size issues
-    if (resources.length > 0) {
-      const BATCH_SIZE = 10;
-      for (let i = 0; i < resources.length; i += BATCH_SIZE) {
-        const batch = resources.slice(i, i + BATCH_SIZE);
-        onProgress?.(`Saving resources (${Math.min(i + BATCH_SIZE, resources.length)}/${resources.length})...`);
+    if (normalized.length > 0) {
+      const BATCH_SIZE = 50;
+      for (let i = 0; i < normalized.length; i += BATCH_SIZE) {
+        const batch = normalized.slice(i, i + BATCH_SIZE);
+        onProgress?.(`Saving resources (${Math.min(i + BATCH_SIZE, normalized.length)}/${normalized.length})...`);
         const { error: insertError } = await supabase
           .from('resources')
           .insert(batch);
