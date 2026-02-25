@@ -1,8 +1,4 @@
-const apiUrl = import.meta.env.VITE_API_URL as string;
-
-if (!apiUrl) {
-  throw new Error('Missing VITE_API_URL environment variable');
-}
+const apiUrl = (import.meta.env.VITE_API_URL as string | undefined) ?? '';
 
 function getToken(): string | null {
   try {
@@ -202,20 +198,47 @@ function createQueryBuilder(table: string): QueryBuilder {
   return builder;
 }
 
-async function insertRows(table: string, rows: unknown, opts?: { returning?: boolean }): Promise<{ data: unknown; error: ApiError | null }> {
+interface InsertBuilder {
+  _table: string;
+  _rows: unknown;
+  _selectCols: string;
+  _single: boolean;
+  _maybeSingle: boolean;
+  select(columns?: string): InsertBuilder;
+  single(): Promise<{ data: unknown; error: ApiError | null }>;
+  maybeSingle(): Promise<{ data: unknown; error: ApiError | null }>;
+  then(resolve: (val: { data: unknown; error: ApiError | null }) => void, reject?: (err: unknown) => void): void;
+}
+
+async function executeInsert(builder: InsertBuilder): Promise<{ data: unknown; error: ApiError | null }> {
   const headers = buildHeaders();
-  if (opts?.returning !== false) {
-    headers['Prefer'] = 'return=representation';
+  headers['Prefer'] = 'return=representation';
+  if (builder._selectCols && builder._selectCols !== '*') {
+    headers['Prefer'] += `,columns=${builder._selectCols}`;
   }
 
+  if (builder._single || builder._maybeSingle) {
+    headers['Accept'] = 'application/vnd.pgrst.object+json';
+  }
+
+  const params = new URLSearchParams();
+  if (builder._selectCols) {
+    params.set('select', builder._selectCols);
+  }
+
+  const url = params.toString() ? `${apiUrl}/${builder._table}?${params.toString()}` : `${apiUrl}/${builder._table}`;
+
   try {
-    const res = await fetch(`${apiUrl}/${table}`, {
+    const res = await fetch(url, {
       method: 'POST',
       headers,
-      body: JSON.stringify(rows),
+      body: JSON.stringify(builder._rows),
     });
 
     if (!res.ok) {
+      if (res.status === 406 && builder._maybeSingle) {
+        return { data: null, error: null };
+      }
       const body = await res.json().catch(() => ({})) as Record<string, string>;
       return { data: null, error: { message: body?.message ?? `HTTP ${res.status}`, code: body?.code } };
     }
@@ -226,6 +249,36 @@ async function insertRows(table: string, rows: unknown, opts?: { returning?: boo
   } catch (err: unknown) {
     return { data: null, error: { message: err instanceof Error ? err.message : String(err) } };
   }
+}
+
+function createInsertBuilder(table: string, rows: unknown): InsertBuilder {
+  const builder: InsertBuilder = {
+    _table: table,
+    _rows: rows,
+    _selectCols: '*',
+    _single: false,
+    _maybeSingle: false,
+
+    select(columns = '*') {
+      this._selectCols = columns;
+      return this;
+    },
+
+    async single() {
+      this._single = true;
+      return executeInsert(this);
+    },
+
+    async maybeSingle() {
+      this._maybeSingle = true;
+      return executeInsert(this);
+    },
+
+    then(resolve, reject) {
+      executeInsert(this).then(resolve, reject);
+    },
+  };
+  return builder;
 }
 
 interface UpdateBuilder {
@@ -386,7 +439,7 @@ async function callRpcAnon(fnName: string, params: Record<string, unknown> = {})
 export interface PostgRESTClient {
   from(table: string): {
     select(columns?: string): QueryBuilder;
-    insert(rows: unknown): Promise<{ data: unknown; error: ApiError | null }>;
+    insert(rows: unknown): InsertBuilder;
     update(data: unknown): UpdateBuilder;
     delete(): DeleteBuilder;
     upsert(rows: unknown): Promise<{ data: unknown; error: ApiError | null }>;
@@ -401,7 +454,7 @@ export const supabase: PostgRESTClient = {
         return createQueryBuilder(table).select(columns);
       },
       insert(rows: unknown) {
-        return insertRows(table, rows);
+        return createInsertBuilder(table, rows);
       },
       update(data: unknown) {
         return createUpdateBuilder(table, data);

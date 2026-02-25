@@ -33,7 +33,7 @@ const ROLE_ICON = { admin: Shield, power_user: Zap, auditor: Eye };
 const ROLE_LABEL = { admin: 'Admin', power_user: 'Power User', auditor: 'Auditor' };
 
 function AppShell() {
-  const { orgUser, signOut, isAdmin, loading } = useAuth();
+  const { session, orgUser, signOut, isAdmin, loading } = useAuth();
   const [selectedAccountId, setSelectedAccountId] = useState<string | null>(null);
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
   const [resources, setResources] = useState<Resource[]>([]);
@@ -194,12 +194,12 @@ function AppShell() {
                 >
                   <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/40 flex items-center justify-center flex-shrink-0">
                     <span className="text-[11px] font-bold text-blue-700 dark:text-blue-300">
-                      {(orgUser?.full_name || orgUser?.email || '?').charAt(0).toUpperCase()}
+                      {(orgUser?.full_name || session?.full_name || orgUser?.email || session?.email || '?').charAt(0).toUpperCase()}
                     </span>
                   </div>
                   <div className="hidden sm:flex flex-col items-start leading-tight">
                     <span className="text-xs font-medium text-gray-900 dark:text-gray-100 max-w-[120px] truncate">
-                      {orgUser?.full_name || orgUser?.email}
+                      {orgUser?.full_name || session?.full_name || orgUser?.email || session?.email}
                     </span>
                     <span className="flex items-center gap-1 text-[10px] text-gray-500 dark:text-gray-400">
                       <RoleIcon size={9} />
@@ -215,9 +215,9 @@ function AppShell() {
                     <div className="absolute right-0 top-full mt-1 w-52 bg-white dark:bg-gray-900 rounded-xl shadow-xl border border-gray-200 dark:border-gray-700 z-40 overflow-hidden">
                       <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
                         <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate">
-                          {orgUser?.full_name || '—'}
+                          {orgUser?.full_name || session?.full_name || orgUser?.email || session?.email || '—'}
                         </p>
-                        <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">{orgUser?.email}</p>
+                        <p className="text-[11px] text-gray-500 dark:text-gray-400 truncate mt-0.5">{orgUser?.email || session?.email}</p>
                         <div className="flex items-center gap-1 mt-1.5">
                           <RoleIcon size={10} className="text-gray-500 dark:text-gray-400" />
                           <span className="text-[10px] text-gray-500 dark:text-gray-400">{roleLabel}</span>
