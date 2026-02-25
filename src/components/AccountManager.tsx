@@ -99,10 +99,10 @@ export function AccountManager({ onAccountSelect, selectedAccountId, onSyncCompl
       setSyncDone(accountId);
       onSyncComplete?.();
       setTimeout(() => setSyncDone((prev) => (prev === accountId ? null : prev)), 2500);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to sync resources:', error);
       setSyncProgress(null);
-      alert('Failed to sync resources');
+      alert(`Sync failed: ${error?.message || 'Unknown error'}`);
     } finally {
       setSyncing(null);
     }

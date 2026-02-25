@@ -611,15 +611,26 @@ export async function fetchLinodeResources(accountId: string, onProgress?: (msg:
     }
 
     // Delete existing resources for this account
-    await supabase.from('resources').delete().eq('account_id', accountId);
+    const { error: deleteError } = await supabase.from('resources').delete().eq('account_id', accountId);
+    if (deleteError) {
+      console.error('Failed to delete existing resources:', deleteError);
+    }
 
-    // Insert new resources
+    // Insert new resources in batches to avoid payload size issues
     if (resources.length > 0) {
-      const { error: insertError } = await supabase
-        .from('resources')
-        .insert(resources);
+      const BATCH_SIZE = 10;
+      for (let i = 0; i < resources.length; i += BATCH_SIZE) {
+        const batch = resources.slice(i, i + BATCH_SIZE);
+        onProgress?.(`Saving resources (${Math.min(i + BATCH_SIZE, resources.length)}/${resources.length})...`);
+        const { error: insertError } = await supabase
+          .from('resources')
+          .insert(batch);
 
-      if (insertError) throw insertError;
+        if (insertError) {
+          console.error(`Insert batch ${i / BATCH_SIZE + 1} failed:`, insertError);
+          throw new Error(`Failed to save resources: ${insertError.message}${insertError.details ? ' — ' + insertError.details : ''}${insertError.hint ? ' (hint: ' + insertError.hint + ')' : ''}`);
+        }
+      }
     }
 
     // Fetch newly inserted resources to get their UUIDs

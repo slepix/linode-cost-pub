@@ -241,18 +241,21 @@ async function executeInsert(builder: InsertBuilder): Promise<{ data: unknown; e
   const url = params.toString() ? `${apiUrl}/${builder._table}?${params.toString()}` : `${apiUrl}/${builder._table}`;
 
   try {
+    const body = JSON.stringify(builder._rows);
     const res = await fetch(url, {
       method: 'POST',
       headers,
-      body: JSON.stringify(builder._rows),
+      body,
     });
 
     if (!res.ok) {
       if (res.status === 406 && builder._maybeSingle) {
         return { data: null, error: null };
       }
-      const body = await res.json().catch(() => ({})) as Record<string, string>;
-      return { data: null, error: { message: body?.message ?? `HTTP ${res.status}`, code: body?.code } };
+      const respBody = await res.json().catch(() => ({})) as Record<string, string>;
+      const errMsg = respBody?.message ?? `HTTP ${res.status}`;
+      console.error(`[PostgREST INSERT ${builder._table}] ${res.status}:`, respBody);
+      return { data: null, error: { message: errMsg, code: respBody?.code, details: respBody?.details, hint: respBody?.hint } };
     }
 
     const text = await res.text();
@@ -454,7 +457,7 @@ export interface PostgRESTClient {
     insert(rows: unknown): InsertBuilder;
     update(data: unknown): UpdateBuilder;
     delete(): DeleteBuilder;
-    upsert(rows: unknown): Promise<{ data: unknown; error: ApiError | null }>;
+    upsert(rows: unknown, opts?: { onConflict?: string; ignoreDuplicates?: boolean }): Promise<{ data: unknown; error: ApiError | null }>;
   };
   rpc(fnName: string, params?: Record<string, unknown>): Promise<{ data: unknown; error: ApiError | null }>;
 }
@@ -474,16 +477,24 @@ export const supabase: PostgRESTClient = {
       delete() {
         return createDeleteBuilder(table);
       },
-      upsert(rows: unknown) {
+      upsert(rows: unknown, opts?: { onConflict?: string; ignoreDuplicates?: boolean }) {
         const headers = buildHeaders();
-        headers['Prefer'] = 'return=representation,resolution=merge-duplicates';
-        return fetch(`${apiUrl}/${table}`, {
+        const resolution = opts?.ignoreDuplicates ? 'resolution=ignore-duplicates' : 'resolution=merge-duplicates';
+        headers['Prefer'] = `return=representation,${resolution}`;
+        const params = new URLSearchParams();
+        if (opts?.onConflict) {
+          params.set('on_conflict', opts.onConflict);
+        }
+        const qs = params.toString();
+        const url = qs ? `${apiUrl}/${table}?${qs}` : `${apiUrl}/${table}`;
+        return fetch(url, {
           method: 'POST',
           headers,
           body: JSON.stringify(rows),
         }).then(async (res) => {
           if (!res.ok) {
             const body = await res.json().catch(() => ({})) as Record<string, string>;
+            console.error(`[PostgREST UPSERT ${table}] ${res.status}:`, body);
             return { data: null, error: { message: body?.message ?? `HTTP ${res.status}` } };
           }
           const text = await res.text();
