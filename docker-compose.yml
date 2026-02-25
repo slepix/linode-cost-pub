@@ -3,7 +3,7 @@ services:
     image: postgrest/postgrest:v12.2.3
     restart: unless-stopped
     environment:
-      PGRST_DB_URI: postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT:-5432}/${DB_NAME:-defaultdb}?sslmode=verify-full&sslrootcert=/etc/ssl/certs/linode-db-ca.crt
+      PGRST_DB_URI: postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT:-5432}/${DB_NAME:-lccm}?sslmode=verify-full&sslrootcert=/etc/ssl/certs/linode-db-ca.crt
       PGRST_DB_SCHEMA: public
       PGRST_DB_ANON_ROLE: anon
       PGRST_DB_POOL: 10
@@ -19,6 +19,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
+      args:
+        VITE_API_URL: ${VITE_API_URL}
     restart: unless-stopped
     depends_on:
       - postgrest

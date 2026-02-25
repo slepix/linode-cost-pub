@@ -70,12 +70,18 @@ write_files:
 
       source /opt/app/env-static
 
-      PSQL_OPTS="-h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME"
+      LCCM_DB="lccm"
+      PSQL_ADMIN="-h $DB_HOST -p $DB_PORT -U $DB_USER -d $DB_NAME"
+      PSQL_OPTS="-h $DB_HOST -p $DB_PORT -U $DB_USER -d $LCCM_DB"
       export PGPASSWORD="$DB_PASSWORD"
       export PGSSLMODE=verify-full
       export PGSSLROOTCERT=/etc/ssl/certs/linode-db-ca.crt
 
-      echo "Setting JWT secret on the database..."
+      echo "Creating lccm database if it does not exist..."
+      psql $PSQL_ADMIN -tc "SELECT 1 FROM pg_database WHERE datname = '$LCCM_DB'" | grep -q 1 \
+        || psql $PSQL_ADMIN -c "CREATE DATABASE $LCCM_DB;"
+
+      echo "Setting JWT secret on the lccm database..."
       psql $PSQL_OPTS -c "CREATE SCHEMA IF NOT EXISTS private; CREATE TABLE IF NOT EXISTS private.app_config (key text PRIMARY KEY, value text NOT NULL); INSERT INTO private.app_config (key, value) VALUES ('jwt_secret', '$JWT_SECRET') ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;"
 
       echo "Applying schema..."
@@ -84,6 +90,7 @@ write_files:
       unset PGPASSWORD
 
       cp /opt/app/env-static "$APP_DIR/.env"
+      sed -i "s/^DB_NAME=.*/DB_NAME=$LCCM_DB/" "$APP_DIR/.env"
       printf 'VITE_API_URL=%s/api\n' "$BASE_URL" >> "$APP_DIR/.env"
       chmod 600 "$APP_DIR/.env"
 
