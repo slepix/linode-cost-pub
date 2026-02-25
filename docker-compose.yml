@@ -21,7 +21,11 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     environment:
-      API_URL: ${VITE_API_URL:-/api}
+      API_URL: ${VITE_API_URL:-/postgrest}
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT:-5432}/${DB_NAME:-lccm}?sslmode=verify-full&sslrootcert=/etc/ssl/certs/linode-db-ca.crt
+      REFRESH_API_SECRET: ${REFRESH_API_SECRET:-}
+    volumes:
+      - /etc/ssl/certs/linode-db-ca.crt:/etc/ssl/certs/linode-db-ca.crt:ro
     depends_on:
       - postgrest
     ports:

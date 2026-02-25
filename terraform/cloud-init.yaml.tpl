@@ -87,11 +87,15 @@ write_files:
       echo "Applying schema..."
       psql $PSQL_OPTS -f "$APP_DIR/schema.sql"
 
+      echo "Granting PostgREST roles to the connecting DB user ($DB_USER)..."
+      psql $PSQL_OPTS -c "GRANT anon, authenticated, service_role TO \"$DB_USER\";"
+
       unset PGPASSWORD
 
       cp /opt/app/env-static "$APP_DIR/.env"
       sed -i "s/^DB_NAME=.*/DB_NAME=$LCCM_DB/" "$APP_DIR/.env"
-      printf 'API_URL=/postgrest\n' >> "$APP_DIR/.env"
+      printf 'VITE_API_URL=/api\n' >> "$APP_DIR/.env"
+      printf "DATABASE_URL=postgresql://$DB_USER:$DB_PASSWORD@$DB_HOST:$DB_PORT/$LCCM_DB?sslmode=verify-full&sslrootcert=/etc/ssl/certs/linode-db-ca.crt\n" >> "$APP_DIR/.env"
       chmod 600 "$APP_DIR/.env"
 
       echo "Building and starting the stack..."
@@ -122,12 +126,13 @@ write_files:
           }
 
           location /sync/ {
-              rewrite ^/sync/(.*) /$1 break;
-              proxy_pass http://127.0.0.1:3001;
+              proxy_pass http://127.0.0.1:8080/api/;
               proxy_set_header Host $host;
               proxy_set_header X-Real-IP $remote_addr;
               proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
               proxy_set_header X-Forwarded-Proto $scheme;
+              proxy_read_timeout 300;
+              proxy_send_timeout 300;
           }
 
           location / {

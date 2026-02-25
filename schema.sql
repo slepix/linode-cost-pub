@@ -48,11 +48,12 @@ BEGIN
 END
 $$;
 
--- Grant the app user (lccm_app) the ability to switch to these roles.
--- If running as a different user, replace 'lccm_app' with your app user name.
+-- Grant the connecting user the ability to switch to PostgREST roles.
+-- This works for both lccm_app (local) and Linode managed DB users.
 DO $$
 BEGIN
-  IF EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'lccm_app') THEN
+  EXECUTE format('GRANT anon, authenticated, service_role TO %I', current_user);
+  IF current_user != 'lccm_app' AND EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'lccm_app') THEN
     GRANT anon, authenticated, service_role TO lccm_app;
   END IF;
 END
