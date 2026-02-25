@@ -94,22 +94,22 @@ BEGIN
     RAISE EXCEPTION 'JWT secret not configured. Insert a row into private.app_config with key=jwt_secret.';
   END IF;
 
-  header_b64 := replace(replace(
+  header_b64 := replace(replace(replace(
     encode(convert_to('{"alg":"HS256","typ":"JWT"}', 'UTF8'), 'base64'),
-    '+', '-'), '/', '_');
-  header_b64 := rtrim(header_b64, E'\n=');
+    E'\n', ''), '+', '-'), '/', '_');
+  header_b64 := rtrim(header_b64, '=');
 
-  payload_b64 := replace(replace(
+  payload_b64 := replace(replace(replace(
     encode(convert_to(payload::text, 'UTF8'), 'base64'),
-    '+', '-'), '/', '_');
-  payload_b64 := rtrim(payload_b64, E'\n=');
+    E'\n', ''), '+', '-'), '/', '_');
+  payload_b64 := rtrim(payload_b64, '=');
 
   signing_input := header_b64 || '.' || payload_b64;
 
-  sig := replace(replace(
+  sig := replace(replace(replace(
     encode(hmac(signing_input, secret, 'sha256'), 'base64'),
-    '+', '-'), '/', '_');
-  sig := rtrim(sig, E'\n=');
+    E'\n', ''), '+', '-'), '/', '_');
+  sig := rtrim(sig, '=');
 
   RETURN signing_input || '.' || sig;
 END;

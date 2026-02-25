@@ -15,7 +15,9 @@ function getToken(): string | null {
     const raw = localStorage.getItem('lccm_auth');
     if (!raw) return null;
     const parsed = JSON.parse(raw);
-    return parsed?.token ?? null;
+    const token = parsed?.token;
+    if (typeof token !== 'string' || !token) return null;
+    return token.replace(/[\r\n\t ]/g, '');
   } catch {
     return null;
   }
